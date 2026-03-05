@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:practica_7/src/handlers/sqlite_handeler.dart';
 
-void main() => runApp(const MyApp());
+
+
+Future<void> main() async{
+
+WidgetsFlutterBinding.ensureInitialized();
+
+runApp(const MyApp());
+}
+
 
 // Variables de los datos para guardar la información del usuario
 class DatosRegistro {
@@ -79,6 +88,12 @@ class RegistroParte1 extends StatefulWidget {
 }
 
 class _RegistroParte1State extends State<RegistroParte1> {
+
+  //Para la base de datos
+
+  SqliteHandler mSqliteHandler = SqliteHandler();
+
+
   // Clave para el formulario
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
