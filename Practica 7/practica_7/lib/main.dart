@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:practica_7/src/handlers/sqlite_handeler.dart';
+import 'package:sqlite/alumno.dart';
+
+//Iportnado la clase db
+import 'package:sqlite/db.dart';
 
 
-
-Future<void> main() async{
-
-WidgetsFlutterBinding.ensureInitialized();
-
-runApp(const MyApp());
+void main() {
+  runApp(MyApp());
 }
-
 
 // Variables de los datos para guardar la información del usuario
 class DatosRegistro {
@@ -57,7 +55,7 @@ class PantallaInicio extends StatelessWidget {
             ElevatedButton( // funcion de los botones
               onPressed: () { // dependiendo de la seleccion del usuario
                 if (miRegistro.completo) { // si quiere ver su registro nos manda a otra pantalla
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const PantallaResumen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) =>  Listado ()));
                 } else { // si aun no esta registado nos manda un mensaje a pantalla
                   ScaffoldMessenger.of(context).showSnackBar( //metodo para mensajes inferiores en pantalla
                     const SnackBar(content: Text("Aún no estás registrado")), //mensaje que aparecera en pantalla
@@ -89,9 +87,8 @@ class RegistroParte1 extends StatefulWidget {
 
 class _RegistroParte1State extends State<RegistroParte1> {
 
-  //Para la base de datos
 
-  SqliteHandler mSqliteHandler = SqliteHandler();
+  
 
 
   // Clave para el formulario
@@ -173,10 +170,13 @@ class RegistroParte2 extends StatefulWidget {
 class _RegistroParte2State extends State<RegistroParte2> {
   String selectedSemestre = "---Seleccione opcion---";
   String selectedMod = "Presencial";
+  
   Map<String, bool> cursosMap = {"Salud mental": false, "Programacion en java": false, "Deportes": false, "Musica": false, "Educacion Ambinetal": false};
 
   @override
   Widget build(BuildContext context) {
+   
+    
     return Scaffold(
       appBar: AppBar(title: const Text("Paso 2: Selección de Talleres")),
       body: ListView(
@@ -220,7 +220,10 @@ class _RegistroParte2State extends State<RegistroParte2> {
               miRegistro.cursos = cursosMap.entries.where((e) => e.value).map((e) => e.key).toList();
               miRegistro.completo = true;
               // Navega al resumen y borra el historial para que no pueda volver atrás al registro
-              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const PantallaResumen()), (route) => false);
+              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) =>  Listado()), (route) => false);
+
+              //Insertando a la base de datos 
+              DB.insert(Alumno(nombre: miRegistro.nombre,matricula: miRegistro.matricula,carrera:miRegistro.carrera,semestre: miRegistro.semestre,modalidad:miRegistro.modalidad,cursos:miRegistro.cursos));
             },
             child: const Text("Finalizar Registro"),
           )
@@ -231,37 +234,78 @@ class _RegistroParte2State extends State<RegistroParte2> {
 }
 
 // --- PANTALLA DE RESUMEN ---
-class PantallaResumen extends StatelessWidget {
-  const PantallaResumen({super.key});
+
+class Listado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Resumen del Registro")),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Datos Registrados:", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-            Text("Nombre: ${miRegistro.nombre}"),
-            Text("Matrícula: ${miRegistro.matricula}"),
-            Text("Carrera: ${miRegistro.carrera}"),
-            Text("Semestre: ${miRegistro.semestre}"),
-            Text("Modalidad: ${miRegistro.modalidad}"),
-            Text("Cursos inscritos: ${miRegistro.cursos.isEmpty ? 'Ninguno' : miRegistro.cursos.join(", ")}"),
-            const Spacer(),
-            Center(
-              child: ElevatedButton(
-                onPressed: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const PantallaInicio()), (route) => false),
-                child: const Text("Ir al Inicio"),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
+      appBar: AppBar(
+        title: Text("Animales"),
       ),
+      
+      body: Container(
+        child: Lista()
+      )
     );
   }
+}
+
+
+class Lista extends StatefulWidget {
+
+  @override
+  _MiLista createState() => _MiLista();
+
+}
+
+class _MiLista extends State<Lista> {
+
+  List<Alumno> alumnos = [];
+
+  @override
+  void initState() {
+    cargaAlumnos();
+    super.initState();
+  }
+
+  cargaAlumnos() async {
+    List<Alumno> auxAlumno = await DB.alumnos();
+
+    setState(() {
+      alumnos = auxAlumno;
+    });
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+        itemCount: alumnos.length,
+        itemBuilder:
+            (context, i) =>
+          Dismissible(key: Key(i.toString()),
+              direction: DismissDirection.startToEnd,
+              background: Container (
+                color: Colors.red,
+                padding: EdgeInsets.only(left: 5),
+                  child: Align(
+                alignment: Alignment.centerLeft,
+                child: Icon(Icons.delete, color: Colors.white)
+              )
+              ),
+           
+            child: ListTile(
+              title: Text(alumnos[i].nombre),
+              trailing: MaterialButton(
+                onPressed: () {
+                  Navigator.pushNamed(context,"/editar",arguments: alumnos[i]);
+                },
+                child: Icon(Icons.edit)
+              )
+            )
+          )
+    );
+  }
+
 }
